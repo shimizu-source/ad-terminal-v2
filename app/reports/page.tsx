@@ -9,19 +9,28 @@ type Report = {
   actions: string | null;
   market_score: number | null;
   created_at: string;
-  categories?: {
-    name: string;
-  } | null;
+  categories?: { name: string } | null;
 };
+
+function getStatus(report: Report) {
+  const summary = report.summary || "";
+  if (summary.includes("変更を検知")) return "変更あり";
+  if (summary.includes("取得に失敗")) return "取得失敗";
+  if (summary.includes("初回保存")) return "初回保存";
+  return "変更なし";
+}
 
 export default async function ReportsPage() {
   const { data } = await supabase
     .from("reports")
     .select("*, categories(name)")
     .order("created_at", { ascending: false })
-    .limit(50);
+    .limit(100);
 
   const reports = (data || []) as Report[];
+
+  const changedCount = reports.filter((r) => getStatus(r) === "変更あり").length;
+  const errorCount = reports.filter((r) => getStatus(r) === "取得失敗").length;
 
   return (
     <main style={styles.page}>
@@ -32,12 +41,26 @@ export default async function ReportsPage() {
           <div>
             <h1 style={styles.title}>レポート履歴</h1>
             <p style={styles.subTitle}>
-              LPチェック結果とAI分析結果を時系列で確認します
+              LPチェック結果とAI分析を時系列で確認します
             </p>
           </div>
-
           <div style={styles.badge}>履歴 {reports.length}件</div>
         </header>
+
+        <div style={styles.cards}>
+          <div style={styles.card}>
+            <p style={styles.cardLabel}>総レポート</p>
+            <strong style={styles.cardNumber}>{reports.length}</strong>
+          </div>
+          <div style={styles.card}>
+            <p style={styles.cardLabel}>変更あり</p>
+            <strong style={styles.cardNumber}>{changedCount}</strong>
+          </div>
+          <div style={styles.card}>
+            <p style={styles.cardLabel}>取得失敗</p>
+            <strong style={styles.cardNumber}>{errorCount}</strong>
+          </div>
+        </div>
 
         <section style={styles.panel}>
           <h2 style={styles.panelTitle}>最新レポート一覧</h2>
@@ -45,35 +68,66 @@ export default async function ReportsPage() {
           {reports.length === 0 ? (
             <p style={styles.smallText}>まだレポートはありません。</p>
           ) : (
-            reports.map((report) => (
-              <Link
-                key={report.id}
-                href={`/reports/${report.id}`}
-                style={styles.reportLink}
-              >
-                <div style={styles.reportCard}>
-                  <div>
-                    <strong>{report.summary || "レポート"}</strong>
-                    <p style={styles.smallText}>
-                      {report.categories?.name || "カテゴリ未設定"} /{" "}
-                      {new Date(report.created_at).toLocaleString("ja-JP")}
-                    </p>
-                  </div>
+            reports.map((report) => {
+              const status = getStatus(report);
 
-                  <span
-                    style={
-                      (report.market_score || 0) >= 80
-                        ? styles.high
-                        : (report.market_score || 0) >= 50
-                        ? styles.mid
-                        : styles.low
-                    }
-                  >
-                    スコア {report.market_score || 0}
-                  </span>
-                </div>
-              </Link>
-            ))
+              return (
+                <Link
+                  key={report.id}
+                  href={`/reports/${report.id}`}
+                  style={styles.reportLink}
+                >
+                  <div style={styles.reportCard}>
+                    <div style={styles.reportMain}>
+                      <div style={styles.reportTop}>
+                        <span
+                          style={
+                            status === "変更あり"
+                              ? styles.statusHigh
+                              : status === "取得失敗"
+                              ? styles.statusError
+                              : status === "初回保存"
+                              ? styles.statusMid
+                              : styles.statusLow
+                          }
+                        >
+                          {status}
+                        </span>
+
+                        <span style={styles.date}>
+                          {new Date(report.created_at).toLocaleString("ja-JP")}
+                        </span>
+                      </div>
+
+                      <strong style={styles.summary}>
+                        {report.summary || "レポート"}
+                      </strong>
+
+                      <p style={styles.smallText}>
+                        {report.categories?.name || "カテゴリ未設定"}
+                      </p>
+
+                      <p style={styles.preview}>
+                        {(report.actions || "分析内容なし").slice(0, 120)}
+                        {(report.actions || "").length > 120 ? "..." : ""}
+                      </p>
+                    </div>
+
+                    <span
+                      style={
+                        (report.market_score || 0) >= 80
+                          ? styles.scoreHigh
+                          : (report.market_score || 0) >= 50
+                          ? styles.scoreMid
+                          : styles.scoreLow
+                      }
+                    >
+                      スコア {report.market_score || 0}
+                    </span>
+                  </div>
+                </Link>
+              );
+            })
           )}
         </section>
       </section>
@@ -98,7 +152,7 @@ const styles: { [key: string]: CSSProperties } = {
     display: "flex",
     justifyContent: "space-between",
     alignItems: "center",
-    marginBottom: "28px",
+    marginBottom: "24px",
   },
   title: {
     fontSize: "34px",
@@ -113,6 +167,27 @@ const styles: { [key: string]: CSSProperties } = {
     padding: "12px 18px",
     borderRadius: "999px",
     fontWeight: 700,
+  },
+  cards: {
+    display: "grid",
+    gridTemplateColumns: "repeat(3, 1fr)",
+    gap: "16px",
+    marginBottom: "20px",
+  },
+  card: {
+    background: "#fff",
+    padding: "20px",
+    borderRadius: "16px",
+    boxShadow: "0 10px 25px rgba(15,23,42,0.08)",
+  },
+  cardLabel: {
+    color: "#64748b",
+    margin: 0,
+  },
+  cardNumber: {
+    display: "block",
+    fontSize: "34px",
+    marginTop: "8px",
   },
   panel: {
     background: "#fff",
@@ -131,41 +206,98 @@ const styles: { [key: string]: CSSProperties } = {
   reportCard: {
     display: "flex",
     justifyContent: "space-between",
-    alignItems: "center",
+    gap: "20px",
     border: "1px solid #e5e7eb",
     borderRadius: "14px",
     padding: "18px",
-    marginBottom: "16px",
+    marginBottom: "14px",
     background: "#fff",
     cursor: "pointer",
+  },
+  reportMain: {
+    flex: 1,
+  },
+  reportTop: {
+    display: "flex",
+    alignItems: "center",
+    gap: "10px",
+    marginBottom: "10px",
+  },
+  summary: {
+    fontSize: "16px",
   },
   smallText: {
     color: "#64748b",
     margin: "6px 0 0",
     fontSize: "13px",
   },
-  high: {
+  preview: {
+    color: "#334155",
+    margin: "10px 0 0",
+    fontSize: "13px",
+    lineHeight: 1.6,
+  },
+  date: {
+    color: "#64748b",
+    fontSize: "12px",
+  },
+  statusHigh: {
     background: "#fee2e2",
     color: "#b91c1c",
-    padding: "6px 10px",
+    padding: "5px 9px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: 700,
   },
-  mid: {
+  statusError: {
+    background: "#111827",
+    color: "#fff",
+    padding: "5px 9px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 700,
+  },
+  statusMid: {
     background: "#fef3c7",
     color: "#92400e",
-    padding: "6px 10px",
+    padding: "5px 9px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: 700,
   },
-  low: {
+  statusLow: {
     background: "#dbeafe",
     color: "#1d4ed8",
-    padding: "6px 10px",
+    padding: "5px 9px",
     borderRadius: "999px",
     fontSize: "12px",
     fontWeight: 700,
+  },
+  scoreHigh: {
+    background: "#fee2e2",
+    color: "#b91c1c",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 700,
+    height: "fit-content",
+  },
+  scoreMid: {
+    background: "#fef3c7",
+    color: "#92400e",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 700,
+    height: "fit-content",
+  },
+  scoreLow: {
+    background: "#dbeafe",
+    color: "#1d4ed8",
+    padding: "8px 12px",
+    borderRadius: "999px",
+    fontSize: "12px",
+    fontWeight: 700,
+    height: "fit-content",
   },
 };
