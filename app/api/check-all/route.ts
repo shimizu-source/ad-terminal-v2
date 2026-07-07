@@ -1,5 +1,8 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
+import fs from "fs";
+import path from "path";
+import puppeteer from "puppeteer";
 import { supabase } from "../../lib/supabase";
 
 function cleanHtml(html: string) {
@@ -12,6 +15,37 @@ function cleanHtml(html: string) {
     .replace(/\s+/g, " ")
     .trim()
     .slice(0, 12000);
+}
+
+function safeFileName(value: string) {
+  return value
+    .replace(/[^a-zA-Z0-9-_]/g, "-")
+    .slice(0, 80);
+}
+
+async function takeScreenshot(url: string, competitorId: string) {
+  try {
+    const dir = path.join(process.cwd(), "public", "screenshots", "after");
+    fs.mkdirSync(dir, { recursive: true });
+
+    const fileName = `${safeFileName(competitorId)}-${Date.now()}.png`;
+    const filePath = path.join(dir, fileName);
+
+    const browser = await puppeteer.launch({
+      headless: true,
+      args: ["--no-sandbox", "--disable-setuid-sandbox"],
+    });
+
+    const page = await browser.newPage();
+    await page.setViewport({ width: 1440, height: 1200 });
+    await page.goto(url, { waitUntil: "networkidle2", timeout: 60000 });
+    await page.screenshot({ path: filePath, fullPage: true });
+    await browser.close();
+
+    return `/screenshots/after/${fileName}`;
+  } catch (error: any) {
+    return null;
+  }
 }
 
 async function analyzeLPWithOpenAI({
@@ -89,8 +123,7 @@ ${currentText.slice(0, 5000)}
 
   return (
     json.output_text ??
-    json.output?.[0]?.content?.find((c: any) => c.type === "output_text")
-      ?.text ??
+    json.output?.[0]?.content?.find((c: any) => c.type === "output_text")?.text ??
     json.output?.[0]?.content?.[0]?.text ??
     JSON.stringify(json, null, 2)
   );
@@ -153,10 +186,16 @@ export async function GET() {
         .limit(1)
         .maybeSingle();
 
+      const afterScreenshotPath = await takeScreenshot(
+        competitor.lp_url,
+        competitor.id
+      );
+
       await supabase.from("lp_snapshots").insert({
         competitor_id: competitor.id,
         content_hash: contentHash,
         content_text: contentText,
+        screenshot_path: afterScreenshotPath,
       });
 
       if (!lastSnapshot) {
@@ -164,12 +203,15 @@ export async function GET() {
           category_id: competitor.category_id || null,
           market_score: 50,
           summary: `${competitor.name} のLPを初回保存しました。`,
-          actions: "次回チェック時からAI分析できます。",
+          actions: `次回チェック時からAI分析できます。\n\n【スクリーンショット】\n${afterScreenshotPath || "保存できませんでした"}`,
+          before_screenshot_path: null,
+          after_screenshot_path: afterScreenshotPath,
         });
 
         results.push({
           name: competitor.name,
           status: "first_saved",
+          afterScreenshotPath,
         });
 
         continue;
@@ -191,12 +233,16 @@ export async function GET() {
         summary: hasChanged
           ? `${competitor.name} のLP変更を検知しました。`
           : `${competitor.name} のLPに大きな変更はありませんでした。`,
-        actions: aiAnalysis,
+        actions: `${aiAnalysis}\n\n【前回スクリーンショット】\n${lastSnapshot.screenshot_path || "なし"}\n\n【今回スクリーンショット】\n${afterScreenshotPath || "保存できませんでした"}`,
+        before_screenshot_path: lastSnapshot.screenshot_path || null,
+        after_screenshot_path: afterScreenshotPath,
       });
 
       results.push({
         name: competitor.name,
         status: hasChanged ? "changed" : "no_change",
+        beforeScreenshotPath: lastSnapshot.screenshot_path || null,
+        afterScreenshotPath,
       });
     } catch (e: any) {
       await supabase.from("reports").insert({

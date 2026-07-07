@@ -40,9 +40,7 @@ export default async function ReportsPage() {
         <header style={styles.header}>
           <div>
             <h1 style={styles.title}>レポート履歴</h1>
-            <p style={styles.subTitle}>
-              LPチェック結果とAI分析を時系列で確認します
-            </p>
+            <p style={styles.subTitle}>LPチェック結果とAI分析を時系列で確認します</p>
           </div>
           <div style={styles.badge}>履歴 {reports.length}件</div>
         </header>
@@ -65,70 +63,28 @@ export default async function ReportsPage() {
         <section style={styles.panel}>
           <h2 style={styles.panelTitle}>最新レポート一覧</h2>
 
-          {reports.length === 0 ? (
-            <p style={styles.smallText}>まだレポートはありません。</p>
-          ) : (
-            reports.map((report) => {
-              const status = getStatus(report);
+          {reports.map((report) => {
+            const status = getStatus(report);
 
-              return (
-                <Link
-                  key={report.id}
-                  href={`/reports/${report.id}`}
-                  style={styles.reportLink}
-                >
-                  <div style={styles.reportCard}>
-                    <div style={styles.reportMain}>
-                      <div style={styles.reportTop}>
-                        <span
-                          style={
-                            status === "変更あり"
-                              ? styles.statusHigh
-                              : status === "取得失敗"
-                              ? styles.statusError
-                              : status === "初回保存"
-                              ? styles.statusMid
-                              : styles.statusLow
-                          }
-                        >
-                          {status}
-                        </span>
-
-                        <span style={styles.date}>
-                          {new Date(report.created_at).toLocaleString("ja-JP")}
-                        </span>
-                      </div>
-
-                      <strong style={styles.summary}>
-                        {report.summary || "レポート"}
-                      </strong>
-
-                      <p style={styles.smallText}>
-                        {report.categories?.name || "カテゴリ未設定"}
-                      </p>
-
-                      <p style={styles.preview}>
-                        {(report.actions || "分析内容なし").slice(0, 120)}
-                        {(report.actions || "").length > 120 ? "..." : ""}
-                      </p>
-                    </div>
-
-                    <span
-                      style={
-                        (report.market_score || 0) >= 80
-                          ? styles.scoreHigh
-                          : (report.market_score || 0) >= 50
-                          ? styles.scoreMid
-                          : styles.scoreLow
-                      }
-                    >
-                      スコア {report.market_score || 0}
-                    </span>
+            return (
+              <Link key={report.id} href={`/reports/${report.id}`} style={styles.reportLink}>
+                <div style={styles.reportCard}>
+                  <div>
+                    <strong>{report.summary || "レポート"}</strong>
+                    <p style={styles.smallText}>
+                      {status} / {new Date(report.created_at).toLocaleString("ja-JP")}
+                    </p>
+                    <p style={styles.preview}>
+                      {(report.actions || "分析内容なし").slice(0, 120)}
+                      {(report.actions || "").length > 120 ? "..." : ""}
+                    </p>
                   </div>
-                </Link>
-              );
-            })
-          )}
+
+                  <span style={styles.score}>スコア {report.market_score || 0}</span>
+                </div>
+              </Link>
+            );
+          })}
         </section>
       </section>
     </main>
@@ -136,168 +92,21 @@ export default async function ReportsPage() {
 }
 
 const styles: { [key: string]: CSSProperties } = {
-  page: {
-    display: "flex",
-    minHeight: "100vh",
-    background: "#0f172a",
-    color: "#111827",
-    fontFamily: "Arial, sans-serif",
-  },
-  content: {
-    flex: 1,
-    padding: "32px",
-    background: "#f1f5f9",
-  },
-  header: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: "24px",
-  },
-  title: {
-    fontSize: "34px",
-    margin: 0,
-  },
-  subTitle: {
-    color: "#64748b",
-    marginTop: "8px",
-  },
-  badge: {
-    background: "#fff",
-    padding: "12px 18px",
-    borderRadius: "999px",
-    fontWeight: 700,
-  },
-  cards: {
-    display: "grid",
-    gridTemplateColumns: "repeat(3, 1fr)",
-    gap: "16px",
-    marginBottom: "20px",
-  },
-  card: {
-    background: "#fff",
-    padding: "20px",
-    borderRadius: "16px",
-    boxShadow: "0 10px 25px rgba(15,23,42,0.08)",
-  },
-  cardLabel: {
-    color: "#64748b",
-    margin: 0,
-  },
-  cardNumber: {
-    display: "block",
-    fontSize: "34px",
-    marginTop: "8px",
-  },
-  panel: {
-    background: "#fff",
-    padding: "24px",
-    borderRadius: "18px",
-    boxShadow: "0 10px 25px rgba(15,23,42,0.08)",
-  },
-  panelTitle: {
-    marginTop: 0,
-    marginBottom: "20px",
-  },
-  reportLink: {
-    textDecoration: "none",
-    color: "inherit",
-  },
-  reportCard: {
-    display: "flex",
-    justifyContent: "space-between",
-    gap: "20px",
-    border: "1px solid #e5e7eb",
-    borderRadius: "14px",
-    padding: "18px",
-    marginBottom: "14px",
-    background: "#fff",
-    cursor: "pointer",
-  },
-  reportMain: {
-    flex: 1,
-  },
-  reportTop: {
-    display: "flex",
-    alignItems: "center",
-    gap: "10px",
-    marginBottom: "10px",
-  },
-  summary: {
-    fontSize: "16px",
-  },
-  smallText: {
-    color: "#64748b",
-    margin: "6px 0 0",
-    fontSize: "13px",
-  },
-  preview: {
-    color: "#334155",
-    margin: "10px 0 0",
-    fontSize: "13px",
-    lineHeight: 1.6,
-  },
-  date: {
-    color: "#64748b",
-    fontSize: "12px",
-  },
-  statusHigh: {
-    background: "#fee2e2",
-    color: "#b91c1c",
-    padding: "5px 9px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 700,
-  },
-  statusError: {
-    background: "#111827",
-    color: "#fff",
-    padding: "5px 9px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 700,
-  },
-  statusMid: {
-    background: "#fef3c7",
-    color: "#92400e",
-    padding: "5px 9px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 700,
-  },
-  statusLow: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
-    padding: "5px 9px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 700,
-  },
-  scoreHigh: {
-    background: "#fee2e2",
-    color: "#b91c1c",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 700,
-    height: "fit-content",
-  },
-  scoreMid: {
-    background: "#fef3c7",
-    color: "#92400e",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 700,
-    height: "fit-content",
-  },
-  scoreLow: {
-    background: "#dbeafe",
-    color: "#1d4ed8",
-    padding: "8px 12px",
-    borderRadius: "999px",
-    fontSize: "12px",
-    fontWeight: 700,
-    height: "fit-content",
-  },
+  page: { display: "flex", minHeight: "100vh", background: "#0f172a", color: "#111827", fontFamily: "Arial, sans-serif" },
+  content: { flex: 1, padding: "32px", background: "#f1f5f9" },
+  header: { display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" },
+  title: { fontSize: "34px", margin: 0 },
+  subTitle: { color: "#64748b", marginTop: "8px" },
+  badge: { background: "#fff", padding: "12px 18px", borderRadius: "999px", fontWeight: 700 },
+  cards: { display: "grid", gridTemplateColumns: "repeat(3, 1fr)", gap: "16px", marginBottom: "20px" },
+  card: { background: "#fff", padding: "20px", borderRadius: "16px" },
+  cardLabel: { color: "#64748b", margin: 0 },
+  cardNumber: { display: "block", fontSize: "34px", marginTop: "8px" },
+  panel: { background: "#fff", padding: "24px", borderRadius: "18px" },
+  panelTitle: { marginTop: 0, marginBottom: "20px" },
+  reportLink: { textDecoration: "none", color: "inherit" },
+  reportCard: { display: "flex", justifyContent: "space-between", gap: "20px", border: "1px solid #e5e7eb", borderRadius: "14px", padding: "18px", marginBottom: "14px", background: "#fff" },
+  smallText: { color: "#64748b", margin: "6px 0 0", fontSize: "13px" },
+  preview: { color: "#334155", margin: "10px 0 0", fontSize: "13px", lineHeight: 1.6 },
+  score: { background: "#dbeafe", color: "#1d4ed8", padding: "8px 12px", borderRadius: "999px", fontSize: "12px", fontWeight: 700, height: "fit-content" },
 };

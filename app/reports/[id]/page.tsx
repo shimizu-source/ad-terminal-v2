@@ -9,6 +9,8 @@ type Report = {
   actions: string | null;
   market_score: number | null;
   created_at: string;
+  before_screenshot_path: string | null;
+  after_screenshot_path: string | null;
 };
 
 export default async function ReportDetail({
@@ -42,20 +44,49 @@ export default async function ReportDetail({
         ) : (
           <>
             <div style={styles.card}>
-              <h1>{report.summary}</h1>
-
+              <h1 style={styles.title}>{report.summary}</h1>
               <p style={styles.date}>
                 {new Date(report.created_at).toLocaleString("ja-JP")}
               </p>
-
               <div style={styles.score}>
                 市場スコア：{report.market_score ?? 0}
               </div>
             </div>
 
+            <div style={styles.grid}>
+              <div style={styles.card}>
+                <h2>変更前</h2>
+                {report.before_screenshot_path ? (
+                  <a href={report.before_screenshot_path} target="_blank">
+                    <img
+                      src={report.before_screenshot_path}
+                      alt="変更前スクリーンショット"
+                      style={styles.image}
+                    />
+                  </a>
+                ) : (
+                  <p style={styles.empty}>前回画像はありません。</p>
+                )}
+              </div>
+
+              <div style={styles.card}>
+                <h2>変更後</h2>
+                {report.after_screenshot_path ? (
+                  <a href={report.after_screenshot_path} target="_blank">
+                    <img
+                      src={report.after_screenshot_path}
+                      alt="変更後スクリーンショット"
+                      style={styles.image}
+                    />
+                  </a>
+                ) : (
+                  <p style={styles.empty}>今回画像はありません。</p>
+                )}
+              </div>
+            </div>
+
             <div style={styles.card}>
               <h2>AI分析結果</h2>
-
               <pre style={styles.analysis}>
                 {report.actions || "分析結果はありません。"}
               </pre>
@@ -72,14 +103,13 @@ const styles: { [key: string]: CSSProperties } = {
     display: "flex",
     minHeight: "100vh",
     background: "#0f172a",
+    fontFamily: "Arial, sans-serif",
   },
-
   content: {
     flex: 1,
     background: "#f1f5f9",
     padding: "32px",
   },
-
   back: {
     textDecoration: "none",
     color: "#2563eb",
@@ -87,7 +117,6 @@ const styles: { [key: string]: CSSProperties } = {
     display: "inline-block",
     marginBottom: "20px",
   },
-
   card: {
     background: "#fff",
     borderRadius: "18px",
@@ -95,17 +124,33 @@ const styles: { [key: string]: CSSProperties } = {
     marginBottom: "24px",
     boxShadow: "0 10px 25px rgba(15,23,42,0.08)",
   },
-
+  title: {
+    marginTop: 0,
+  },
   date: {
     color: "#64748b",
   },
-
   score: {
     marginTop: "18px",
     fontWeight: 700,
     fontSize: "18px",
   },
-
+  grid: {
+    display: "grid",
+    gridTemplateColumns: "1fr 1fr",
+    gap: "20px",
+  },
+  image: {
+    width: "100%",
+    maxHeight: "720px",
+    objectFit: "contain",
+    border: "1px solid #e5e7eb",
+    borderRadius: "12px",
+    background: "#f8fafc",
+  },
+  empty: {
+    color: "#64748b",
+  },
   analysis: {
     whiteSpace: "pre-wrap",
     lineHeight: 1.8,
