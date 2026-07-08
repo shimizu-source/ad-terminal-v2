@@ -45,17 +45,20 @@ export default async function ReportDetail({
           <>
             <div style={styles.card}>
               <h1 style={styles.title}>{report.summary}</h1>
+
               <p style={styles.date}>
                 {new Date(report.created_at).toLocaleString("ja-JP")}
               </p>
+
               <div style={styles.score}>
                 市場スコア：{report.market_score ?? 0}
               </div>
             </div>
 
-            <div style={styles.grid}>
+            <div style={styles.compareGrid}>
               <div style={styles.card}>
-                <h2>変更前</h2>
+                <h2 style={styles.sectionTitle}>変更前</h2>
+
                 {report.before_screenshot_path ? (
                   <a href={report.before_screenshot_path} target="_blank">
                     <img
@@ -65,12 +68,13 @@ export default async function ReportDetail({
                     />
                   </a>
                 ) : (
-                  <p style={styles.empty}>前回画像はありません。</p>
+                  <div style={styles.emptyBox}>前回画像はありません。</div>
                 )}
               </div>
 
               <div style={styles.card}>
-                <h2>変更後</h2>
+                <h2 style={styles.sectionTitle}>変更後</h2>
+
                 {report.after_screenshot_path ? (
                   <a href={report.after_screenshot_path} target="_blank">
                     <img
@@ -80,13 +84,14 @@ export default async function ReportDetail({
                     />
                   </a>
                 ) : (
-                  <p style={styles.empty}>今回画像はありません。</p>
+                  <div style={styles.emptyBox}>今回画像はありません。</div>
                 )}
               </div>
             </div>
 
             <div style={styles.card}>
-              <h2>AI分析結果</h2>
+              <h2 style={styles.sectionTitle}>AI分析結果</h2>
+
               <pre style={styles.analysis}>
                 {report.actions || "分析結果はありません。"}
               </pre>
@@ -127,6 +132,10 @@ const styles: { [key: string]: CSSProperties } = {
   title: {
     marginTop: 0,
   },
+  sectionTitle: {
+    marginTop: 0,
+    marginBottom: "16px",
+  },
   date: {
     color: "#64748b",
   },
@@ -135,7 +144,7 @@ const styles: { [key: string]: CSSProperties } = {
     fontWeight: 700,
     fontSize: "18px",
   },
-  grid: {
+  compareGrid: {
     display: "grid",
     gridTemplateColumns: "1fr 1fr",
     gap: "20px",
@@ -148,8 +157,13 @@ const styles: { [key: string]: CSSProperties } = {
     borderRadius: "12px",
     background: "#f8fafc",
   },
-  empty: {
+  emptyBox: {
     color: "#64748b",
+    background: "#f8fafc",
+    border: "1px dashed #cbd5e1",
+    borderRadius: "12px",
+    padding: "40px",
+    textAlign: "center",
   },
   analysis: {
     whiteSpace: "pre-wrap",
