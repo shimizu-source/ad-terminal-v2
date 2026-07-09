@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import crypto from "crypto";
 import { supabase } from "../../lib/supabase";
-import { analyzeLPWithOpenAI } from "../../services/ai";
+import { analyzeLPWithOpenAI, analyzeImages } from "../../services/ai";
 import { takeScreenshotBuffer } from "../../services/screenshot";
 import { uploadScreenshot } from "../../services/storage";
 
@@ -21,14 +21,23 @@ function safeFileName(value: string) {
   return value.replace(/[^a-zA-Z0-9-_]/g, "-").slice(0, 80);
 }
 
-export async function GET() {
+export async function GET(request: Request) {
   const results: any[] = [];
 
-  const { data: competitors, error } = await supabase
-    .from("competitors")
-    .select("*")
-    .eq("active", true)
-    .order("created_at", { ascending: false });
+ const { searchParams } = new URL(request.url);
+const competitorId = searchParams.get("competitorId");
+
+let competitorsQuery = supabase
+  .from("competitors")
+  .select("*")
+  .eq("active", true)
+  .order("created_at", { ascending: false });
+
+if (competitorId) {
+  competitorsQuery = competitorsQuery.eq("id", competitorId);
+}
+
+const { data: competitors, error } = await competitorsQuery;
 
   if (error) {
     return NextResponse.json({ success: false, error: error.message }, { status: 500 });
@@ -105,6 +114,14 @@ export async function GET() {
         currentText: contentText,
         hasChanged,
       });
+      let imageAnalysis = "";
+
+if (lastSnapshot.screenshot_path && afterScreenshotPath) {
+  imageAnalysis = await analyzeImages({
+    beforeImage: lastSnapshot.screenshot_path,
+    afterImage: afterScreenshotPath,
+  });
+}
 
       await supabase.from("reports").insert({
         category_id: competitor.category_id || null,
@@ -112,7 +129,11 @@ export async function GET() {
         summary: hasChanged
           ? `${competitor.name} のLP変更を検知しました。`
           : `${competitor.name} のLPに大きな変更はありませんでした。`,
-        actions: aiAnalysis,
+        actions: `${aiAnalysis}
+
+【画像比較AI】
+${imageAnalysis || "画像比較は実行されませんでした。"}`,
+
         before_screenshot_path: lastSnapshot.screenshot_path || null,
         after_screenshot_path: afterScreenshotPath,
       });
@@ -135,9 +156,15 @@ export async function GET() {
     }
   }
 
-  return NextResponse.json({
-    success: true,
-    checked: results.length,
-    results,
-  });
+  const redirectTo = searchParams.get("redirect");
+
+if (redirectTo) {
+  return NextResponse.redirect(new URL(redirectTo, request.url));
+}
+
+return NextResponse.json({
+  success: true,
+  checked: results.length,
+  results,
+});
 }
