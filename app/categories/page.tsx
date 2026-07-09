@@ -44,7 +44,14 @@ async function deleteCategory(formData: FormData) {
 }
 
 export default async function CategoriesPage() {
-  const { data: categories = [] } = await supabase
+  const { data: categoriesData } = await supabase
+  .from("categories")
+  .select("*")
+  .eq("active", true)
+  .order("created_at", { ascending: false });
+
+const categories = categoriesData || [];
+
     .from("categories")
     .select("*")
     .eq("active", true)
