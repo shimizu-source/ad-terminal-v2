@@ -1,31 +1,44 @@
+"use client";
+
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import type { CSSProperties } from "react";
 
+const navItems = [
+  { label: "市場速報", href: "/" },
+  { label: "カテゴリ", href: "/categories" },
+  { label: "競合管理", href: "/competitors" },
+  { label: "レポート履歴", href: "/reports" },
+  { label: "通知設定", href: "/settings" },
+];
+
 export default function Sidebar() {
+  const pathname = usePathname();
+
   return (
     <aside style={styles.sidebar}>
-      <div style={styles.logo}>Ad Terminal</div>
+      <h1 style={styles.logo}>Ad Terminal</h1>
 
       <nav style={styles.nav}>
-        <Link href="/" style={styles.navActive}>
-          市場速報
-        </Link>
+        {navItems.map((item) => {
+          const isActive =
+            item.href === "/"
+              ? pathname === "/"
+              : pathname.startsWith(item.href);
 
-        <Link href="/categories" style={styles.navItem}>
-          カテゴリ
-        </Link>
-
-        <Link href="/competitors" style={styles.navItem}>
-          競合管理
-        </Link>
-
-        <Link href="/reports" style={styles.navItem}>
-          レポート履歴
-        </Link>
-
-        <Link href="/settings" style={styles.navItem}>
-          通知設定
-        </Link>
+          return (
+            <Link
+              key={item.href}
+              href={item.href}
+              style={{
+                ...styles.navItem,
+                ...(isActive ? styles.activeNavItem : {}),
+              }}
+            >
+              {item.label}
+            </Link>
+          );
+        })}
       </nav>
     </aside>
   );
@@ -34,37 +47,28 @@ export default function Sidebar() {
 const styles: { [key: string]: CSSProperties } = {
   sidebar: {
     width: "230px",
+    minHeight: "100vh",
     background: "#020617",
     color: "#fff",
-    padding: "28px 20px",
+    padding: "28px 16px",
   },
-
   logo: {
     fontSize: "24px",
-    fontWeight: 700,
-    marginBottom: "40px",
+    margin: "0 0 32px",
   },
-
   nav: {
     display: "flex",
     flexDirection: "column",
-    gap: "12px",
+    gap: "10px",
   },
-
-  navActive: {
-    background: "#2563eb",
+  navItem: {
     color: "#fff",
-    padding: "14px",
-    borderRadius: "12px",
     textDecoration: "none",
+    padding: "14px 16px",
+    borderRadius: "10px",
     fontWeight: 700,
   },
-
-  navItem: {
-    color: "#cbd5e1",
-    padding: "14px",
-    borderRadius: "12px",
-    textDecoration: "none",
-    fontWeight: 600,
+  activeNavItem: {
+    background: "#2563eb",
   },
 };
