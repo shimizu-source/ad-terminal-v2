@@ -111,7 +111,7 @@ export default async function CompetitorsPage({
 
             <select name="category_id" style={styles.input} required>
               <option value="">カテゴリを選択</option>
-              {categories.map((category: any) => (
+              {(categories || []).map((category: any) => (
                 <option key={category.id} value={category.id}>
                   {category.name}
                 </option>
@@ -149,7 +149,7 @@ export default async function CompetitorsPage({
 
             <select name="category" defaultValue={category} style={styles.input}>
               <option value="">すべてのカテゴリ</option>
-              {categories.map((item: any) => (
+              {(categories || []).map((item: any) => (
                 <option key={item.id} value={item.id}>
                   {item.name}
                 </option>
@@ -166,10 +166,10 @@ export default async function CompetitorsPage({
 
         <section style={styles.panel}>
           <h2>登録競合LP</h2>
-                    {competitors.length === 0 ? (
+                    {(competitors || []).length === 0 ? (
             <p style={styles.smallText}>該当する競合LPはありません。</p>
           ) : (
-            competitors.map((competitor: any) => (
+            (competitors || []).map((competitor: any) => (
               <div key={competitor.id} style={styles.item}>
                 <div style={styles.summaryRow}>
                   <div style={styles.nameBlock}>
@@ -215,7 +215,7 @@ export default async function CompetitorsPage({
                           defaultValue={competitor.category_id || ""}
                           style={styles.input}
                         >
-                          {categories.map((category: any) => (
+                          {(categories || []).map((category: any) => (
                             <option key={category.id} value={category.id}>
                               {category.name}
                             </option>
