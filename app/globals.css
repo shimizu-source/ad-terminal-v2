@@ -1,26 +1,128 @@
-@import "tailwindcss";
-
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+html,
+body {
+  font-family: Arial, Helvetica, sans-serif;
+  background: #f1f5f9;
+  color: #111827;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+a {
+  color: inherit;
+}
+
+button {
+  cursor: pointer;
+  font-family: inherit;
+}
+
+input,
+select,
+textarea,
+button {
+  font-size: 14px;
+}
+
+/* ===========================
+   PC
+=========================== */
+
+@media (min-width: 901px) {
+  aside {
+    display: block;
+  }
+
+  .mobile-header {
+    display: none;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ===========================
+   Tablet / Mobile
+=========================== */
+
+@media (max-width: 900px) {
+  aside {
+    display: none !important;
+  }
+
+  body main {
+    display: block !important;
+  }
+
+  body main > section {
+    padding: 16px !important;
+  }
+
+  header {
+    display: block !important;
+  }
+
+  h1 {
+    font-size: 28px !important;
+  }
+
+  h2 {
+    font-size: 22px !important;
+  }
+
+  input,
+  select,
+  textarea,
+  button {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  /* gridを全部1列に */
+  div[style*="grid-template-columns"] {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* 横スクロール防止 */
+  body {
+    overflow-x: hidden;
+  }
+
+  img {
+    max-width: 100%;
+    height: auto;
+  }
+
+  table {
+    width: 100%;
+    display: block;
+    overflow-x: auto;
+  }
+
+  pre {
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+}
+
+/* ===========================
+   ハンバーガー
+=========================== */
+
+.mobile-header {
+  display: none;
+}
+
+@media (max-width: 900px) {
+  .mobile-header {
+    display: flex !important;
+    align-items: center;
+    justify-content: space-between;
+    background: #020617;
+    color: #fff;
+    padding: 14px 16px;
+    position: sticky;
+    top: 0;
+    z-index: 999;
+  }
 }
