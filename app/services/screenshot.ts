@@ -1,69 +1,75 @@
 import "server-only";
-import chromium from "@sparticuz/chromium";
-import { chromium as playwrightChromium } from "playwright-core";
+
+function getBrowserlessApiKey(): string {
+  const apiKey = process.env.BROWSERLESS_API_KEY;
+
+  if (!apiKey) {
+    throw new Error("BROWSERLESS_API_KEY が設定されていません。");
+  }
+
+  return apiKey;
+}
 
 export async function takeScreenshotBuffer(
   url: string
 ): Promise<Buffer> {
-  let browser;
+  const browserlessApiKey = getBrowserlessApiKey();
 
-  try {
-    const executablePath = await chromium.executablePath();
+  const endpoint =
+    "https://production-sfo.browserless.io/screenshot" +
+    `?token=${encodeURIComponent(browserlessApiKey)}`;
 
-    browser = await playwrightChromium.launch({
-      executablePath,
-      args: chromium.args,
-      headless: true,
-    });
-
-    const context = await browser.newContext({
+  const response = await fetch(endpoint, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      "Cache-Control": "no-cache",
+    },
+    body: JSON.stringify({
+      url,
+      options: {
+        type: "png",
+        fullPage: true,
+      },
       viewport: {
         width: 1440,
         height: 1200,
+        deviceScaleFactor: 1,
       },
-      deviceScaleFactor: 1,
-      userAgent:
-        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-        "AppleWebKit/537.36 (KHTML, like Gecko) " +
-        "Chrome/130.0.0.0 Safari/537.36",
-      ignoreHTTPSErrors: true,
-    });
+      gotoOptions: {
+        waitUntil: "networkidle2",
+        timeout: 60000,
+      },
+    }),
+    cache: "no-store",
+  });
 
-    const page = await context.newPage();
-
-    await page.goto(url, {
-      waitUntil: "networkidle",
-      timeout: 60000,
-    });
-
-    await page.waitForTimeout(2000);
-
-    const screenshot = await page.screenshot({
-      fullPage: true,
-      type: "png",
-    });
-
-    await context.close();
-
-    return Buffer.from(screenshot);
-  } catch (error) {
-    const message =
-      error instanceof Error
-        ? error.message
-        : "不明なスクリーンショットエラーです。";
-
-    console.error("スクリーンショット取得失敗:", {
-      url,
-      message,
-      error,
-    });
+  if (!response.ok) {
+    const errorText = await response.text();
 
     throw new Error(
-      `スクリーンショット取得失敗: ${message}`
+      `Browserlessでスクリーンショット取得に失敗しました。` +
+        ` HTTP ${response.status}: ${errorText}`
     );
-  } finally {
-    if (browser) {
-      await browser.close();
-    }
   }
+
+  const contentType = response.headers.get("content-type") || "";
+
+  if (!contentType.includes("image")) {
+    const responseText = await response.text();
+
+    throw new Error(
+      `Browserlessから画像以外のデータが返されました: ${responseText}`
+    );
+  }
+
+  const arrayBuffer = await response.arrayBuffer();
+
+  if (arrayBuffer.byteLength === 0) {
+    throw new Error(
+      "Browserlessから空の画像データが返されました。"
+    );
+  }
+
+  return Buffer.from(arrayBuffer);
 }
