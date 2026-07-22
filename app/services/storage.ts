@@ -1,10 +1,11 @@
-import { supabase } from "../lib/supabase";
+import "server-only";
+import { supabaseAdmin } from "../lib/supabase-admin";
 
 export async function uploadScreenshot(
   file: Buffer,
   fileName: string
-) {
-  const { data, error } = await supabase.storage
+): Promise<string> {
+  const { data, error } = await supabaseAdmin.storage
     .from("lp-screenshots")
     .upload(fileName, file, {
       contentType: "image/png",
@@ -12,13 +13,22 @@ export async function uploadScreenshot(
     });
 
   if (error) {
-    console.error(error);
-    return null;
+    throw new Error(
+      `スクリーンショットのStorage保存に失敗しました: ${error.message}`
+    );
   }
 
-  const { data: publicUrl } = supabase.storage
+  const { data: publicUrlData } = supabaseAdmin.storage
     .from("lp-screenshots")
     .getPublicUrl(data.path);
 
-  return publicUrl.publicUrl;
+  const publicUrl = publicUrlData.publicUrl;
+
+  if (!publicUrl) {
+    throw new Error(
+      "スクリーンショットの公開URLを取得できませんでした。"
+    );
+  }
+
+  return publicUrl;
 }
