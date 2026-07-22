@@ -1,6 +1,6 @@
 import "server-only";
 import chromium from "@sparticuz/chromium";
-import puppeteer from "puppeteer-core";
+import { chromium as playwrightChromium } from "playwright-core";
 
 export async function takeScreenshotBuffer(
   url: string
@@ -10,38 +10,40 @@ export async function takeScreenshotBuffer(
   try {
     const executablePath = await chromium.executablePath();
 
-    browser = await puppeteer.launch({
-      args: chromium.args,
-      defaultViewport: null,
+    browser = await playwrightChromium.launch({
       executablePath,
+      args: chromium.args,
       headless: true,
     });
 
-    const page = await browser.newPage();
-
-    await page.setViewport({
-      width: 1440,
-      height: 1200,
+    const context = await browser.newContext({
+      viewport: {
+        width: 1440,
+        height: 1200,
+      },
       deviceScaleFactor: 1,
+      userAgent:
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
+        "AppleWebKit/537.36 (KHTML, like Gecko) " +
+        "Chrome/130.0.0.0 Safari/537.36",
+      ignoreHTTPSErrors: true,
     });
 
-    await page.setUserAgent(
-      "Mozilla/5.0 (Windows NT 10.0; Win64; x64) " +
-        "AppleWebKit/537.36 (KHTML, like Gecko) " +
-        "Chrome/130.0.0.0 Safari/537.36"
-    );
+    const page = await context.newPage();
 
     await page.goto(url, {
-      waitUntil: "networkidle2",
+      waitUntil: "networkidle",
       timeout: 60000,
     });
 
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    await page.waitForTimeout(2000);
 
     const screenshot = await page.screenshot({
       fullPage: true,
       type: "png",
     });
+
+    await context.close();
 
     return Buffer.from(screenshot);
   } catch (error) {
@@ -56,7 +58,9 @@ export async function takeScreenshotBuffer(
       error,
     });
 
-    throw new Error(`スクリーンショット取得失敗: ${message}`);
+    throw new Error(
+      `スクリーンショット取得失敗: ${message}`
+    );
   } finally {
     if (browser) {
       await browser.close();
